@@ -162,8 +162,8 @@ fun MainDashboard(
                                 modifier = Modifier.size(38.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (systemAudioActive) Icons.Default.MusicNote else Icons.Default.Mic,
-                                    contentDescription = "Switch Input Source",
+                                    imageVector = Icons.Default.MusicNote,
+                                    contentDescription = "Tangkap Audio Sistem",
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -324,76 +324,42 @@ fun MainDashboard(
 
                     // Input source configurations
                     Column {
-                        Text("SUMBER INPUT AUDIO", color = currentTheme.textMain, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text("Pilih YouTube/Sistem untuk menangkap audio internal langsung tanpa Mic", color = currentTheme.textSec, fontSize = 9.sp)
+                        Text("STATUS AUDIO INTERNAL / YOUTUBE", color = currentTheme.textMain, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Menangkap audio digital langsung dari Speaker, Bluetooth, YouTube, & Game tanpa menggunakan microphone.", color = currentTheme.textSec, fontSize = 9.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            val optMicActive = !systemAudioActive
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (optMicActive) currentTheme.primaryGlow.copy(alpha = 0.2f) else currentTheme.bgMain)
-                                    .border(1.dp, if (optMicActive) currentTheme.primaryGlow else currentTheme.textSec.copy(0.2f), RoundedCornerShape(8.dp))
-                                    .clickable {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (systemAudioActive) currentTheme.primaryGlow.copy(alpha = 0.15f) else currentTheme.bgMain)
+                                .border(1.dp, if (systemAudioActive) currentTheme.primaryGlow else currentTheme.textSec.copy(0.2f), RoundedCornerShape(8.dp))
+                                .clickable {
+                                    if (systemAudioActive) {
                                         com.example.MainActivity.instance?.stopSystemAudioCapture()
-                                    }
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Mic,
-                                        contentDescription = "Microphone",
-                                        tint = if (optMicActive) currentTheme.primaryGlow else currentTheme.textMain,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = "Mic / Sekitar",
-                                        color = if (optMicActive) currentTheme.primaryGlow else currentTheme.textMain,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-
-                            val optProjActive = systemAudioActive
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (optProjActive) currentTheme.primaryGlow.copy(alpha = 0.2f) else currentTheme.bgMain)
-                                    .border(1.dp, if (optProjActive) currentTheme.primaryGlow else currentTheme.textSec.copy(0.2f), RoundedCornerShape(8.dp))
-                                    .clickable {
+                                    } else {
                                         com.example.MainActivity.instance?.startSystemAudioCapture()
                                     }
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.MusicNote,
-                                        contentDescription = "System Playback",
-                                        tint = if (optProjActive) currentTheme.primaryGlow else currentTheme.textMain,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = "YouTube / Sistem",
-                                        color = if (optProjActive) currentTheme.primaryGlow else currentTheme.textMain,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
                                 }
+                                .padding(vertical = 12.dp, horizontal = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MusicNote,
+                                    contentDescription = "System Playback",
+                                    tint = if (systemAudioActive) currentTheme.primaryGlow else currentTheme.textSec,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = if (systemAudioActive) "AUDIO SISTEM: AKTIF" else "AKTIFKAN PENANGKAPAN AUDIO SISTEM",
+                                    color = if (systemAudioActive) currentTheme.primaryGlow else currentTheme.textMain,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }

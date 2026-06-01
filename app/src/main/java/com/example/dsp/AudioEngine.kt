@@ -220,65 +220,8 @@ class AudioEngine {
             }
         }
 
-        // Fallback to MIC if media projection not available or failed
-        var record: AudioRecord? = null
-        var isStereo = true
-        val recBufSize = AudioRecord.getMinBufferSize(
-            SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_STEREO,
-            AudioFormat.ENCODING_PCM_FLOAT
-        )
-        
-        try {
-            record = AudioRecord(
-                AudioSource.MIC,
-                SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_STEREO,
-                AudioFormat.ENCODING_PCM_FLOAT,
-                max(recBufSize, bufferSize * 2 * 4)
-            )
-            if (record.state == AudioRecord.STATE_INITIALIZED) {
-                record.startRecording()
-            } else {
-                record.release()
-                record = null
-            }
-        } catch (e: SecurityException) {
-            Log.e("AudioEngine", "Security exception initializing stereo AudioRecord: ${e.message}")
-        } catch (e: Exception) {
-            Log.e("AudioEngine", "Failed to init stereo AudioRecord: ${e.message}")
-        }
-
-        if (record == null) {
-            isStereo = false
-            val minMonoBuf = AudioRecord.getMinBufferSize(
-                SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_FLOAT
-            )
-            try {
-                record = AudioRecord(
-                    AudioSource.MIC,
-                    SAMPLE_RATE,
-                    AudioFormat.CHANNEL_IN_MONO,
-                    AudioFormat.ENCODING_PCM_FLOAT,
-                    max(minMonoBuf, bufferSize * 4)
-                )
-                if (record.state == AudioRecord.STATE_INITIALIZED) {
-                    record.startRecording()
-                } else {
-                    record.release()
-                    record = null
-                }
-            } catch (e: SecurityException) {
-                Log.e("AudioEngine", "Security exception initializing mono AudioRecord: ${e.message}")
-            } catch (e: Exception) {
-                Log.e("AudioEngine", "Failed to init mono AudioRecord: ${e.message}")
-            }
-        }
-
-        isStereoInput = isStereo
-        return record
+        Log.d("AudioEngine", "MediaProjection is null or not supported. No audio input configured (Microphone fallback has been removed).")
+        return null
     }
 
     fun stop() {
