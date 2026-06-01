@@ -1,0 +1,6 @@
+{
+  "name": "Bro Audio Cross",
+  "description": "Professional low-latency Digital Audio Workstation and DSP mobile Effects Rack with real-time sound processor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

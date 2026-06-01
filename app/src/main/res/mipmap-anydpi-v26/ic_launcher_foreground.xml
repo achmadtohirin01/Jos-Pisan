@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Cast soft shadow background -->
+    <path
+        android:fillColor="#3D000000"
+        android:pathData="M 33,43 L 48,43 L 68,23 L 68,91 L 48,71 L 33,71 Z" />
+        
+    <!-- Main Loudspeaker Base Body -->
+    <path
+        android:pathData="M 30,40 L 45,40 L 65,20 L 65,88 L 45,68 L 30,68 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="30"
+                android:startY="54"
+                android:endX="65"
+                android:endY="54"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#00F0FF" />
+                <item android:offset="1.0" android:color="#00FF66" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- First Sound Wave Arc (Small) -->
+    <path
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeColor="#00FF88"
+        android:pathData="M 74,38 A 18,18 0 0 1 74,70" />
+
+    <!-- Second Sound Wave Arc (Large) -->
+    <path
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeColor="#00F0FF"
+        android:pathData="M 84,28 A 30,30 0 0 1 84,80" />
+
+    <!-- Center active speaker coil node -->
+    <path
+        android:fillColor="#0D0D0D"
+        android:pathData="M 45,51 a 3,3 0 1,1 -6,0 3,3 0 1,1 6,0 Z" />
+</vector>

@@ -1,0 +1,104 @@
+name: Extract ZIP File
+
+on:
+  workflow_dispatch:
+    inputs:
+      zip_source:
+        description: 'Path to the ZIP file in the workspace or a direct download URL'
+        required: true
+        default: 'archive.zip'
+        type: string
+      extract_directory:
+        description: 'Target directory to extract the files into'
+        required: true
+        default: './extracted'
+        type: string
+      overwrite:
+        description: 'Overwrite existing files inside destination list'
+        required: true
+        default: true
+        type: boolean
+      delete_existing:
+        description: 'Delete target folder structure before extraction (clean extraction)'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    name: Gather & Extract ZIP Package
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Target Directory
+        run: |
+          echo "==== Preparing Destination ===="
+          DEST="${{ inputs.extract_directory }}"
+          echo "Target Directory: $DEST"
+          
+          if [ "${{ inputs.delete_existing }}" = "true" ]; then
+            if [ -d "$DEST" ]; then
+              echo "🧹 Cleaning existing target directory: $DEST"
+              rm -rf "$DEST"
+            fi
+          fi
+          
+          mkdir -p "$DEST"
+
+      - name: Acquire ZIP Source File
+        run: |
+          echo "==== Acquiring ZIP File ===="
+          SOURCE="${{ inputs.zip_source }}"
+          
+          if [[ "$SOURCE" =~ ^https?:// ]]; then
+            echo "🌐 HTTP/HTTPS URL detected. Downloading ZIP from: $SOURCE"
+            curl -L -o temp_archive.zip "$SOURCE"
+            echo "ZIP_FILE_PATH=temp_archive.zip" >> $GITHUB_ENV
+          else
+            echo "📁 Local path specified: $SOURCE"
+            if [ ! -f "$SOURCE" ]; then
+              echo "❌ Error: ZIP file not found at path: $SOURCE"
+              exit 1
+            fi
+            echo "ZIP_FILE_PATH=$SOURCE" >> $GITHUB_ENV
+          fi
+
+      - name: Extract ZIP File Archive
+        run: |
+          echo "==== Extracting ZIP File ===="
+          ZIP_FILE="${{ env.ZIP_FILE_PATH }}"
+          DEST="${{ inputs.extract_directory }}"
+          
+          echo "Source: $ZIP_FILE"
+          echo "Destination: $DEST"
+          
+          # Unzip overwrite flag configuration
+          EXTRA_FLAGS=""
+          if [ "${{ inputs.overwrite }}" = "true" ]; then
+            EXTRA_FLAGS="-o" # Overwrite files without prompting
+          else
+            EXTRA_FLAGS="-n" # Never overwrite existing files
+          fi
+          
+          echo "Executing: unzip $EXTRA_FLAGS '$ZIP_FILE' -d '$DEST'"
+          unzip $EXTRA_FLAGS "$ZIP_FILE" -d "$DEST"
+          
+          # Clean temp file if downloaded
+          if [ "$ZIP_FILE" = "temp_archive.zip" ]; then
+            rm temp_archive.zip
+          fi
+          echo "🎉 Extraction complete!"
+
+      - name: List Extracted Contents
+        run: |
+          echo "==== File Structure of: ${{ inputs.extract_directory }} ===="
+          ls -R "${{ inputs.extract_directory }}"
+
+      - name: Upload Extracted Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extracted-files
+          path: ${{ inputs.extract_directory }}
+          retention-days: 7
