@@ -26,6 +26,7 @@
     
     <!-- Required for real audio detection (Oboe / AudioRecord playback capture or Microphone) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 
     <application
         android:allowBackup="true"
@@ -36,6 +37,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
+
+        <service
+            android:name="com.example.dsp.MediaProjectionService"
+            android:foregroundServiceType="mediaProjection"
+            android:enabled="true"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

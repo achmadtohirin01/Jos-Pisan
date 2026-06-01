@@ -4,7 +4,10 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.media.AudioRecord
+import android.media.AudioPlaybackCaptureConfiguration
 import android.media.MediaRecorder.AudioSource
+import android.media.projection.MediaProjection
+import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +27,7 @@ class AudioEngine {
 
     private var audioTrack: AudioTrack? = null
     private var audioRecord: AudioRecord? = null
+    private var mediaProjection: MediaProjection? = null
     private var isStereoInput = false
     private val isRunning = AtomicBoolean(false)
     private var workerThread: Thread? = null
@@ -144,8 +148,79 @@ class AudioEngine {
             Log.e("AudioEngine", "Failed to init AudioTrack: ${e.message}")
         }
 
-        // Try to initialize AudioRecord for capturing system/microphone audio
-        // First try Stereo input
+        // Initialize AudioRecord (either via system Playback Capture or MIC fallback)
+        audioRecord = initAudioRecord()
+
+        workerThread = Thread {
+            renderLoop()
+        }.apply {
+            priority = Thread.MAX_PRIORITY
+            start()
+        }
+    }
+
+    fun setMediaProjection(projection: MediaProjection?) {
+        this.mediaProjection = projection
+        if (isRunning.get()) {
+            synchronized(this) {
+                try {
+                    audioRecord?.let {
+                        if (it.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                            it.stop()
+                        }
+                        it.release()
+                    }
+                } catch (e: Exception) {
+                    Log.e("AudioEngine", "Error stopping record for projection update: ${e.message}")
+                }
+                audioRecord = initAudioRecord()
+            }
+        }
+    }
+
+    private fun initAudioRecord(): AudioRecord? {
+        val mp = mediaProjection
+        if (mp != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                // Setup playback capture configuration for system audio / YouTube / etc.
+                val captureConfig = AudioPlaybackCaptureConfiguration.Builder(mp)
+                    .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
+                    .addMatchingUsage(AudioAttributes.USAGE_GAME)
+                    .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
+                    .build()
+
+                val recBufSize = AudioRecord.getMinBufferSize(
+                    SAMPLE_RATE,
+                    AudioFormat.CHANNEL_IN_STEREO,
+                    AudioFormat.ENCODING_PCM_FLOAT
+                )
+
+                val record = AudioRecord.Builder()
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setChannelMask(AudioFormat.CHANNEL_IN_STEREO)
+                            .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                            .setSampleRate(SAMPLE_RATE)
+                            .build()
+                    )
+                    .setAudioPlaybackCaptureConfig(captureConfig)
+                    .setBufferSizeInBytes(max(recBufSize, bufferSize * 2 * 4))
+                    .build()
+
+                if (record.state == AudioRecord.STATE_INITIALIZED) {
+                    record.startRecording()
+                    isStereoInput = true
+                    Log.d("AudioEngine", "System Playback Capture AudioRecord successfully initialized!")
+                    return record
+                } else {
+                    record.release()
+                }
+            } catch (e: Exception) {
+                Log.e("AudioEngine", "Failed to init system Playback Capture: ${e.message}")
+            }
+        }
+
+        // Fallback to MIC if media projection not available or failed
         var record: AudioRecord? = null
         var isStereo = true
         val recBufSize = AudioRecord.getMinBufferSize(
@@ -174,7 +249,6 @@ class AudioEngine {
             Log.e("AudioEngine", "Failed to init stereo AudioRecord: ${e.message}")
         }
 
-        // Drop down to Mono input if Stereo failed
         if (record == null) {
             isStereo = false
             val minMonoBuf = AudioRecord.getMinBufferSize(
@@ -203,15 +277,8 @@ class AudioEngine {
             }
         }
 
-        audioRecord = record
         isStereoInput = isStereo
-
-        workerThread = Thread {
-            renderLoop()
-        }.apply {
-            priority = Thread.MAX_PRIORITY
-            start()
-        }
+        return record
     }
 
     fun stop() {

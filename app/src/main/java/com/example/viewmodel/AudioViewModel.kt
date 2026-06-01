@@ -50,6 +50,11 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         )
 
     val selectedPresetName = MutableStateFlow("Flat")
+    val systemAudioCaptureActive = MutableStateFlow(false)
+
+    fun setSystemAudioCaptureActive(active: Boolean) {
+        systemAudioCaptureActive.value = active
+    }
 
     init {
         // Sync database configurations into AudioEngine upon launch

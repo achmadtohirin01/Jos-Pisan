@@ -56,6 +56,7 @@ fun MainDashboard(
     val volL by viewModel.volumeL.collectAsStateWithLifecycle()
     val volR by viewModel.volumeR.collectAsStateWithLifecycle()
     val spectrum by viewModel.spectrumFlow.collectAsStateWithLifecycle()
+    val systemAudioActive by viewModel.systemAudioCaptureActive.collectAsStateWithLifecycle()
 
     val currentTheme = ThemeRegistry.get(settings.selectedTheme)
 
@@ -145,6 +146,28 @@ fun MainDashboard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            // Quick Source Selector Button
+                            IconButton(
+                                onClick = {
+                                    if (systemAudioActive) {
+                                        com.example.MainActivity.instance?.stopSystemAudioCapture()
+                                    } else {
+                                        com.example.MainActivity.instance?.startSystemAudioCapture()
+                                    }
+                                },
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = if (systemAudioActive) currentTheme.primaryGlow.copy(alpha = 0.25f) else currentTheme.bgCard,
+                                    contentColor = if (systemAudioActive) currentTheme.primaryGlow else currentTheme.textSec
+                                ),
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (systemAudioActive) Icons.Default.MusicNote else Icons.Default.Mic,
+                                    contentDescription = "Switch Input Source",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
                             // Play/Pause synthesizer loop trigger
                             IconButton(
                                 onClick = { viewModel.togglePlayback() },
@@ -298,6 +321,82 @@ fun MainDashboard(
                     )
 
                     Divider(color = currentTheme.textSec.copy(0.15f))
+
+                    // Input source configurations
+                    Column {
+                        Text("SUMBER INPUT AUDIO", color = currentTheme.textMain, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Pilih YouTube/Sistem untuk menangkap audio internal langsung tanpa Mic", color = currentTheme.textSec, fontSize = 9.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            val optMicActive = !systemAudioActive
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (optMicActive) currentTheme.primaryGlow.copy(alpha = 0.2f) else currentTheme.bgMain)
+                                    .border(1.dp, if (optMicActive) currentTheme.primaryGlow else currentTheme.textSec.copy(0.2f), RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        com.example.MainActivity.instance?.stopSystemAudioCapture()
+                                    }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Mic,
+                                        contentDescription = "Microphone",
+                                        tint = if (optMicActive) currentTheme.primaryGlow else currentTheme.textMain,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = "Mic / Sekitar",
+                                        color = if (optMicActive) currentTheme.primaryGlow else currentTheme.textMain,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            val optProjActive = systemAudioActive
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (optProjActive) currentTheme.primaryGlow.copy(alpha = 0.2f) else currentTheme.bgMain)
+                                    .border(1.dp, if (optProjActive) currentTheme.primaryGlow else currentTheme.textSec.copy(0.2f), RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        com.example.MainActivity.instance?.startSystemAudioCapture()
+                                    }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = "System Playback",
+                                        tint = if (optProjActive) currentTheme.primaryGlow else currentTheme.textMain,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = "YouTube / Sistem",
+                                        color = if (optProjActive) currentTheme.primaryGlow else currentTheme.textMain,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
 
                     // Buffer size configurations
                     Column {
