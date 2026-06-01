@@ -56,7 +56,7 @@ fun MainDashboard(
     val volL by viewModel.volumeL.collectAsStateWithLifecycle()
     val volR by viewModel.volumeR.collectAsStateWithLifecycle()
     val spectrum by viewModel.spectrumFlow.collectAsStateWithLifecycle()
-    val systemAudioActive by viewModel.systemAudioCaptureActive.collectAsStateWithLifecycle()
+    val systemBypassActive by viewModel.isSystemAudioBypassActive.collectAsStateWithLifecycle()
 
     val currentTheme = ThemeRegistry.get(settings.selectedTheme)
 
@@ -149,21 +149,17 @@ fun MainDashboard(
                             // Quick Source Selector Button
                             IconButton(
                                 onClick = {
-                                    if (systemAudioActive) {
-                                        com.example.MainActivity.instance?.stopSystemAudioCapture()
-                                    } else {
-                                        com.example.MainActivity.instance?.startSystemAudioCapture()
-                                    }
+                                    viewModel.setSystemAudioBypassActive(!systemBypassActive)
                                 },
                                 colors = IconButtonDefaults.iconButtonColors(
-                                    containerColor = if (systemAudioActive) currentTheme.primaryGlow.copy(alpha = 0.25f) else currentTheme.bgCard,
-                                    contentColor = if (systemAudioActive) currentTheme.primaryGlow else currentTheme.textSec
+                                    containerColor = if (systemBypassActive) currentTheme.primaryGlow.copy(alpha = 0.25f) else currentTheme.bgCard,
+                                    contentColor = if (systemBypassActive) currentTheme.primaryGlow else currentTheme.textSec
                                 ),
                                 modifier = Modifier.size(38.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.MusicNote,
-                                    contentDescription = "Tangkap Audio Sistem",
+                                    contentDescription = "Tangkap Audio Sistem Bypass",
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -322,45 +318,75 @@ fun MainDashboard(
 
                     Divider(color = currentTheme.textSec.copy(0.15f))
 
-                    // Input source configurations
-                    Column {
-                        Text("STATUS AUDIO INTERNAL / YOUTUBE", color = currentTheme.textMain, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text("Menangkap audio digital langsung dari Speaker, Bluetooth, YouTube, & Game tanpa menggunakan microphone.", color = currentTheme.textSec, fontSize = 9.sp)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Box(
+                    // Input source configurations - SISTEM AUDIO BYPASS exactly as pictured
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, currentTheme.textSec.copy(0.12f), RoundedCornerShape(16.dp)),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = currentTheme.bgCard
+                        )
+                    ) {
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (systemAudioActive) currentTheme.primaryGlow.copy(alpha = 0.15f) else currentTheme.bgMain)
-                                .border(1.dp, if (systemAudioActive) currentTheme.primaryGlow else currentTheme.textSec.copy(0.2f), RoundedCornerShape(8.dp))
                                 .clickable {
-                                    if (systemAudioActive) {
-                                        com.example.MainActivity.instance?.stopSystemAudioCapture()
-                                    } else {
-                                        com.example.MainActivity.instance?.startSystemAudioCapture()
-                                    }
+                                    viewModel.setSystemAudioBypassActive(!systemBypassActive)
                                 }
-                                .padding(vertical = 12.dp, horizontal = 16.dp),
-                            contentAlignment = Alignment.Center
+                                .padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.MusicNote,
-                                    contentDescription = "System Playback",
-                                    tint = if (systemAudioActive) currentTheme.primaryGlow else currentTheme.textSec,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = if (systemAudioActive) "AUDIO SISTEM: AKTIF" else "AKTIFKAN PENANGKAPAN AUDIO SISTEM",
-                                    color = if (systemAudioActive) currentTheme.primaryGlow else currentTheme.textMain,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SettingsInputComponent,
+                                        contentDescription = "Bypass Icon",
+                                        tint = Color(0xFF00E5FF),
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                    Text(
+                                        text = "SISTEM AUDIO BYPASS",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(
+                                            if (systemBypassActive) Color(0xFF00E676)
+                                            else Color(0xFF263238)
+                                        )
+                                        .padding(horizontal = 14.dp, vertical = 7.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (systemBypassActive) "●  AKTIF" else "○  NONAKTIF",
+                                        color = if (systemBypassActive) Color.Black else Color(0xFFB0BEC5),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
                             }
+
+                            Text(
+                                text = "Aplikasi akan memodifikasi suara perangkat secara global. Putar audio di aplikasi pihak ketiga seperti YouTube, Spotify, atau TikTok. Pengaturan Equalizer, Bass Boost, dan Reverb akan langsung berpengaruh secara real-time pada suara yang dihasilkan dari HP Anda!",
+                                color = currentTheme.textSec,
+                                fontSize = 11.sp,
+                                lineHeight = 16.sp,
+                                fontWeight = FontWeight.Normal
+                            )
                         }
                     }
 

@@ -55,6 +55,9 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     instance = this
 
+    // Initialize global bypass manager context
+    com.example.dsp.GlobalAudioBypassManager.instance.initialize(this)
+
     // Request RECORD_AUDIO runtime permission for real-time audio analysis
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)

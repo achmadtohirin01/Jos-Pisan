@@ -1,10 +1,12 @@
 package com.example.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.*
 import com.example.dsp.AudioEngine
+import com.example.dsp.GlobalAudioBypassManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -19,7 +21,22 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     val isPlaying = audioEngine.isPlaying
     val volumeL = audioEngine.volumeL
     val volumeR = audioEngine.volumeR
-    val spectrumFlow = audioEngine.spectrumFlow
+    
+    val isSystemAudioBypassActive = GlobalAudioBypassManager.instance.isBypassActive
+
+    // Combine local audio spectrum and global system-wide spectrum dynamically
+    val spectrumFlow: StateFlow<FloatArray> = combine(
+        audioEngine.spectrumFlow,
+        GlobalAudioBypassManager.instance.spectrumFlow,
+        isSystemAudioBypassActive
+    ) { local, global, isBypass ->
+        if (isBypass) global else local
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = FloatArray(16) { 0.05f }
+    )
+
     val bandPowerSub = audioEngine.bandPowerSub
     val bandPowerLow = audioEngine.bandPowerLow
     val bandPowerMid = audioEngine.bandPowerMid
@@ -52,11 +69,26 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     val selectedPresetName = MutableStateFlow("Flat")
     val systemAudioCaptureActive = MutableStateFlow(false)
 
+    fun setSystemAudioBypassActive(active: Boolean) {
+        GlobalAudioBypassManager.instance.setBypassEnabled(active)
+        val prefs = getApplication<Application>().getSharedPreferences("bro_audio_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("system_audio_bypass", active).apply()
+    }
+
     fun setSystemAudioCaptureActive(active: Boolean) {
         systemAudioCaptureActive.value = active
     }
 
     init {
+        // Load persist global bypass active state on startup
+        viewModelScope.launch {
+            val prefs = application.getSharedPreferences("bro_audio_prefs", Context.MODE_PRIVATE)
+            val savedBypass = prefs.getBoolean("system_audio_bypass", false)
+            if (savedBypass) {
+                GlobalAudioBypassManager.instance.setBypassEnabled(true)
+            }
+        }
+
         // Sync database configurations into AudioEngine upon launch
         viewModelScope.launch {
             // Wait for DB to populate
@@ -113,6 +145,9 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
 
         audioEngine.updateCrossoverFilters()
         audioEngine.updateEqFilters()
+
+        // Sync live global audio bypass configurations
+        GlobalAudioBypassManager.instance.syncCurrentState()
     }
 
     private fun syncRoutingToEngine(routing: RoutingEntity) {
@@ -224,6 +259,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
 
                 audioEngine.eqGains = gainsArr
                 audioEngine.updateEqFilters()
+                GlobalAudioBypassManager.instance.syncCurrentState()
 
                 repository.savePreset(updatedPreset)
             }
@@ -244,6 +280,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 val gainsArr = gainsStr.split(",").map { it.toFloatOrNull() ?: 0f }.toFloatArray()
                 audioEngine.eqGains = gainsArr
                 audioEngine.updateEqFilters()
+                GlobalAudioBypassManager.instance.syncCurrentState()
             }
         }
     }
